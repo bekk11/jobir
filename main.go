@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"github.com/gin-gonic/gin"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
@@ -11,10 +10,10 @@ import (
 
 type User struct {
 	gorm.Model
-	FirstName string `json:"firstName"`
-	LastName  string `json:"lastName"`
-	Email     string `json:"email"`
-	Password  string `json:"password"`
+	FirstName string `json:"firstName" form:"firstName"`
+	LastName  string `json:"lastName" form:"lastName"`
+	Email     string `json:"email" form:"email"`
+	Password  string `json:"password" form:"password"`
 }
 
 var db *gorm.DB
@@ -31,10 +30,14 @@ func main() {
 
 	r := gin.Default()
 
+	r.GET("/list", ListUser)
 	r.POST("/register", CreateUser)
 	r.POST("/login", LoginUser)
 
-	r.Run("localhost:8080")
+	err := r.Run("localhost:8080")
+	if err != nil {
+		return
+	}
 }
 
 func CreateUser(c *gin.Context) {
@@ -51,6 +54,16 @@ type UserLogin struct {
 	Password string `json:"password"`
 }
 
+func ListUser(c *gin.Context) {
+	var users []User
+
+	if result := db.Find(&users); result.Error != nil {
+		c.AbortWithError(http.StatusNotFound, result.Error)
+	}
+
+	c.JSON(http.StatusOK, &users)
+}
+
 func LoginUser(c *gin.Context) {
 	var userLogin UserLogin
 	var foundUser User
@@ -58,8 +71,6 @@ func LoginUser(c *gin.Context) {
 	if err := c.BindJSON(&userLogin); err != nil {
 		c.AbortWithStatus(http.StatusBadRequest)
 	}
-
-	fmt.Println(userLogin)
 
 	if result := db.Where("email = ? AND password = ?", userLogin.Email, userLogin.Password).First(&foundUser); result.Error != nil {
 		c.AbortWithStatus(http.StatusUnauthorized)
