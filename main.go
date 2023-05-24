@@ -42,7 +42,7 @@ func main() {
 
 func CreateUser(c *gin.Context) {
 	var user User
-	if err := c.BindJSON(&user); err != nil {
+	if err := c.Bind(&user); err != nil {
 		c.AbortWithStatus(http.StatusBadRequest)
 	}
 	db.Create(&user)
